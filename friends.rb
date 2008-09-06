@@ -34,24 +34,26 @@ open FoafURI do |foaf_stream|
 
         doc.search("foaf:weblog").each do | blog |
           blog_url = blog.attributes["rdf:resource"]
-          atom_url = blog_url + "data/atom?auth=digest"
+          rss_url = blog_url + "data/rss"
+          secure_rss_url = rss_url + "?auth=digest"
           magic_url = nil
           store.transaction do
-            if ! store[atom_url]
+            if ! store[secure_rss_url]
               sleep 0.5
               free_my_feed_page = Net::HTTP.post_form(
                                     URI.parse('http://freemyfeed.com/free'),
-                                    {'url'=>atom_url, 'user'=> Username, 'pass' => Password}
+                                    {'url'=>secure_rss_url, 'user'=> Username, 'pass' => Password}
                                   ).body
               magic_url = Hpricot(free_my_feed_page).search("#urlbox").text
-              store[atom_url] = magic_url
-              STDERR.puts " #{atom_url} => #{magic_url} "
+              store[secure_rss_url] = magic_url
+              STDERR.puts " #{secure_rss_url} => #{magic_url} "
             end
-            magic_url = store[atom_url]
+            magic_url = store[secure_rss_url]
           end
-          html_url = atom_url.sub(/data\/atom\?auth=digest/, "")
-          user = html_url.sub(/http:\/\//, "").sub(/\..*/, "")
-          xml.outline(:text => user, :title => user, :type => "rss", :xmlUrl => magic_url, :htmlUrl => html_url)
+          private_url = "http://pipes.yahoo.com/pipes/pipe.run?_id=EIdu0pV73RGzFD2ebbsjiw&_render=rss&rss=#{URI.escape magic_url}"
+          user = blog_url.sub(/http:\/\//, "").sub(/\..*/, "") #FIXME: get from FOAF
+          xml.outline(:text => user, :title => user, :type => "rss", :xmlUrl => rss_url, :htmlUrl => blog_url)
+          xml.outline(:text => "#{user} [PROTECTED]", :title => "#{user} [PROTECTED]", :type => "rss", :xmlUrl => private_url, :htmlUrl => blog_url)
         end
 
       end
