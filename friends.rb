@@ -13,6 +13,7 @@ require 'pstore'
 require 'net/http'
 require 'uri'
 require 'builder'
+require 'cgi'
 
 Username  = ARGV[0]
 Password  = ARGV[1]
@@ -33,7 +34,7 @@ class OutlineItem
   end 
 
   def private_url
-    private_url = "http://pipes.yahoo.com/pipes/pipe.run?_id=EIdu0pV73RGzFD2ebbsjiw&_render=rss&rss=#{URI.escape magic_url}"
+    private_url = "http://pipes.yahoo.com/pipes/pipe.run?_id=EIdu0pV73RGzFD2ebbsjiw&_render=rss&rss=#{CGI.escape magic_url}"
   end
 
   def magic_url
