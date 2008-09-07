@@ -15,6 +15,7 @@ Username = ARGV[0]
 store = PStore.new("urls.#{Username}.pstore")
 
 store.transaction do
-      url = "http://#{ARGV[1]}.livejournal.com/data/atom?auth=digest"
-      store[url] = nil
+  url = "http://#{ARGV[1]}.livejournal.com/data/rss?auth=digest"
+  p store[url]
+  store[url] = nil
 end
