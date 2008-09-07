@@ -81,7 +81,6 @@ end
 # OPML parsing
 if OPMLInput and OPMLInput.length > 0
   OPMLInput.each do | opml_filename |
-    puts opml_filename
     open opml_filename do |opml_stream|
       doc = Hpricot.XML opml_stream
 
