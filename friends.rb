@@ -17,7 +17,7 @@ require 'cgi'
 
 Username  = ARGV[0]
 Password  = ARGV[1]
-OPMLInput = ARGV[2]
+OPMLInput = ARGV[2..-1]
 FoafURI = "http://#{Username}.livejournal.com/data/foaf"
 $store = PStore.new("urls.#{Username}.pstore")
 
@@ -79,19 +79,22 @@ rescue
 end
 
 # OPML parsing
-if OPMLInput
-  open OPMLInput do |opml_stream|
-    doc = Hpricot.XML opml_stream
+if OPMLInput and OPMLInput.length > 0
+  OPMLInput.each do | opml_filename |
+    puts opml_filename
+    open opml_filename do |opml_stream|
+      doc = Hpricot.XML opml_stream
 
-    doc.search("body/outline").each do | folder |
-      folder_title = folder.attributes["title"]
-      folder.search("outline").each do | blog |
-        blog_url = blog.attributes["htmlUrl"]
-        next if blog_url !~ /\.livejournal\.com/
-        title = blog.attributes["title"].sub(/\s*\[PROTECTED\]$/, "")
+      doc.search("body/outline").each do | folder |
+        folder_title = folder.attributes["title"]
+        folder.search("outline").each do | blog |
+          blog_url = blog.attributes["htmlUrl"]
+          next if blog_url !~ /\.livejournal\.com/
+          title = blog.attributes["title"].sub(/\s*\[PROTECTED\]$/, "")
 
-        # store items in outline
-        outline[folder_title].push OutlineItem.new(title, blog_url)
+          # store items in outline
+          outline[folder_title].push OutlineItem.new(title, blog_url)
+        end
       end
     end
   end
