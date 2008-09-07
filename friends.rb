@@ -1,9 +1,8 @@
 # Usage:
-# ruby friends.rb username password > import.opml
+# ruby friends.rb username password export.opml > import.opml
 #
 #
 #
-# TODO: use XML Builder or something other than strings
 # TODO: download feeds and detect errors (some percentage of freemyfeed urls are born broken)
 # TODO: use canonical lj names instead of urlized names in the titles
 
@@ -15,13 +14,14 @@ require 'net/http'
 require 'uri'
 require 'builder'
 
-Username = ARGV[0]
-Password = ARGV[1]
+Username  = ARGV[0]
+Password  = ARGV[1]
+OPMLInput = ARGV[2]
 FoafURI = "http://#{Username}.livejournal.com/data/foaf"
 $store = PStore.new("urls.#{Username}.pstore")
 
 class OutlineItem
-  attr :user, :blog_url
+  attr_reader :user, :blog_url
   
   def initialize(user, blog_url)
     @user = user
@@ -60,16 +60,39 @@ end
 outline = Hash.new{ |h,k| h[k] = [] }
 
 # FOAF parsing
-open FoafURI do |foaf_stream|
-  doc = Hpricot foaf_stream
+begin
+  open FoafURI do |foaf_stream|
+    doc = Hpricot.XML foaf_stream
 
-  doc.search("foaf:weblog").each do | blog |
-    folder_title = "livejournal_friends"
-    blog_url = blog.attributes["rdf:resource"]
-    user = blog_url.sub(/http:\/\//, "").sub(/\..*/, "") #FIXME: get from FOAF
+    doc.search("foaf:weblog").each do | blog |
+      folder_title = "livejournal_friends"
+      blog_url = blog.attributes["rdf:resource"]
+      user = blog_url.sub(/http:\/\//, "").sub(/\..*/, "") #FIXME: get from FOAF
 
-    # store items in outline
-    outline[folder_title].push OutlineItem.new(user, blog_url)
+      # store items in outline
+      outline[folder_title].push OutlineItem.new(user, blog_url)
+    end
+  end
+rescue
+  STDERR.puts "sorry, no foaf today"
+end
+
+# OPML parsing
+if OPMLInput
+  open OPMLInput do |opml_stream|
+    doc = Hpricot.XML opml_stream
+
+    doc.search("body/outline").each do | folder |
+      folder_title = folder.attributes["title"]
+      folder.search("outline").each do | blog |
+        blog_url = blog.attributes["htmlUrl"]
+        next if blog_url !~ /\.livejournal\.com/
+        user = blog.attributes["title"].sub(/\s*\[PROTECTED\]$/, "")
+
+        # store items in outline
+        outline[folder_title].push OutlineItem.new(user, blog_url)
+      end
+    end
   end
 end
 
@@ -81,9 +104,8 @@ xml.opml(:version => "1.0") do
     xml.title("subscriptions in Google Reader")
   end
   xml.body do
-    outline.each_with_index do | folder, list | 
+    outline.each do | folder, list | 
       xml.outline(:title => folder, :text => folder) do
-
         list.each do | item |
           item.instance_eval do
             xml.outline(:text => user, :title => user, :type => "rss", :xmlUrl => rss_url, :htmlUrl => blog_url)
@@ -94,4 +116,5 @@ xml.opml(:version => "1.0") do
       end
     end
   end
+end
 puts xml.comment!("created by free_my_livejounal_with_opml, by jes5199, under the GPL3")
