@@ -22,10 +22,10 @@ FoafURI = "http://#{Username}.livejournal.com/data/foaf"
 $store = PStore.new("urls.#{Username}.pstore")
 
 class OutlineItem
-  attr_reader :user, :blog_url
+  attr_reader :title, :blog_url
   
-  def initialize(user, blog_url)
-    @user = user
+  def initialize(title, blog_url)
+    @title = title
     @blog_url = blog_url
   end
 
@@ -88,10 +88,10 @@ if OPMLInput
       folder.search("outline").each do | blog |
         blog_url = blog.attributes["htmlUrl"]
         next if blog_url !~ /\.livejournal\.com/
-        user = blog.attributes["title"].sub(/\s*\[PROTECTED\]$/, "")
+        title = blog.attributes["title"].sub(/\s*\[PROTECTED\]$/, "")
 
         # store items in outline
-        outline[folder_title].push OutlineItem.new(user, blog_url)
+        outline[folder_title].push OutlineItem.new(title, blog_url)
       end
     end
   end
@@ -109,8 +109,8 @@ xml.opml(:version => "1.0") do
       xml.outline(:title => folder, :text => folder) do
         list.each do | item |
           item.instance_eval do
-            xml.outline(:text => user, :title => user, :type => "rss", :xmlUrl => rss_url, :htmlUrl => blog_url)
-            xml.outline(:text => "#{user} [PROTECTED]", :title => "#{user} [PROTECTED]", :type => "rss", :xmlUrl => private_url, :htmlUrl => blog_url)
+            xml.outline(:text => title, :title => title, :type => "rss", :xmlUrl => rss_url, :htmlUrl => blog_url)
+            xml.outline(:text => "#{title} [PROTECTED]", :title => "#{title} [PROTECTED]", :type => "rss", :xmlUrl => private_url, :htmlUrl => blog_url)
           end
         end
 
