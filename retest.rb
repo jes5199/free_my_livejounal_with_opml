@@ -18,11 +18,14 @@ blogs.each do | blog |
     next unless $store[blog]
     puts blog
     STDOUT.flush
-    f = open $store[blog]
-    s = f.read
-    if(s =~ /<title>FreeMyFeed Error \(401\)<\/title>/)
-      puts ""
-      puts "#{blog} => #{$store[blog]}"
+    begin
+      f = open $store[blog]
+      s = f.read
+      if(s =~ /<title>FreeMyFeed Error \(401\)<\/title>/)
+        raise "broken feed"
+      end
+    rescue
+      puts "FAILURE: #{blog} => #{$store[blog]}"
       $store[blog] = nil
     end
   end

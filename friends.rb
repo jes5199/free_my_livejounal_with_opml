@@ -40,12 +40,26 @@ class OutlineItem
   def magic_url
     $store.transaction do
       if ! $store[secure_rss_url]
-        sleep 0.5
-        free_my_feed_page = Net::HTTP.post_form(
-                              URI.parse('http://freemyfeed.com/free'),
-                              {'url'=>secure_rss_url, 'user'=> Username, 'pass' => Password}
-                            ).body
-        magic_url = Hpricot(free_my_feed_page).search("#urlbox").text
+        magic_url = nil
+        begin
+          sleep 0.5
+          free_my_feed_page = Net::HTTP.post_form(
+                                URI.parse('http://freemyfeed.com/free'),
+                                {'url'=>secure_rss_url, 'user'=> Username, 'pass' => Password}
+                              ).body
+          magic_url = Hpricot(free_my_feed_page).search("#urlbox").text
+          begin
+            f = open magic_url
+            s = f.read
+            if(s =~ /<title>FreeMyFeed Error \(401\)<\/title>/)
+              raise "broken feed"
+            end
+          rescue
+            STDERR.puts "FAILURE: #{secure_rss_url} => #{magic_url}"
+            magic_url = nil
+          end
+
+        end until magic_url
         $store[secure_rss_url] = magic_url
         STDERR.puts " #{secure_rss_url} => #{magic_url} "
       end
@@ -69,6 +83,7 @@ begin
       folder_title = "livejournal_friends"
       blog_url = blog.attributes["rdf:resource"]
       user = blog_url.sub(/http:\/\//, "").sub(/\..*/, "") #FIXME: get from FOAF
+      next if user == "status"
 
       # store items in outline
       outline[folder_title].push OutlineItem.new(user, blog_url)
@@ -90,6 +105,7 @@ if OPMLInput and OPMLInput.length > 0
           blog_url = blog.attributes["htmlUrl"]
           next if blog_url !~ /\.livejournal\.com/
           title = blog.attributes["title"].sub(/\s*\[PROTECTED\]$/, "")
+          next if title == "status"
 
           # store items in outline
           outline[folder_title].push OutlineItem.new(title, blog_url)
