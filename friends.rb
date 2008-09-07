@@ -97,7 +97,7 @@ if OPMLInput
 end
 
 # XML generation
-xml = Builder::XmlMarkup.new
+xml = Builder::XmlMarkup.new(:target => STDOUT)
 xml.instruct!
 xml.opml(:version => "1.0") do
   xml.head do
@@ -117,4 +117,4 @@ xml.opml(:version => "1.0") do
     end
   end
 end
-puts xml.comment!("created by free_my_livejounal_with_opml, by jes5199, under the GPL3")
+xml.comment!("created by free_my_livejounal_with_opml, by jes5199, under the GPL3")
